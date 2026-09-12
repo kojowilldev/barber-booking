@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Book a Haircut</title>
+<style>
+  body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 0 16px; }
+  h1 { font-size: 1.4rem; }
+  label { display: block; margin-top: 16px; font-weight: bold; }
+  input, select { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+  .slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .slot-btn {
+    padding: 8px 12px; border: 1px solid #333; background: white;
+    cursor: pointer; border-radius: 4px; width: auto;
+  }
+  .slot-btn.selected { background: #333; color: white; }
+  button.submit {
+    margin-top: 20px; padding: 12px; background: #222; color: white;
+    border: none; border-radius: 4px; cursor: pointer; font-size: 1rem;
+  }
+  #message { margin-top: 16px; font-weight: bold; }
+  .error { color: #b00020; }
+  .success { color: #067d1a; }
+</style>
+</head>
+<body>
+
+<h1>Book a Haircut</h1>
+
+<label for="date">Pick a date</label>
+<input type="date" id="date" />
+
+<div class="slots" id="slots"></div>
+
+<label for="name">Your name</label>
+<input type="text" id="name" placeholder="e.g. Kwame Mensah" />
+
+<label for="phone">Your phone number</label>
+<input type="text" id="phone" placeholder="e.g. 0244000111" />
+
+<button class="submit" id="submitBtn">Book Appointment</button>
+
+<div id="message"></div>
+
+<script>
+  const dateInput = document.getElementById("date");
+  const slotsDiv = document.getElementById("slots");
+  const submitBtn = document.getElementById("submitBtn");
+  const messageDiv = document.getElementById("message");
+
+  let selectedSlot = null;
+
+  // Load available slots whenever the date changes.
+  dateInput.addEventListener("change", async () => {
+    selectedSlot = null;
+    slotsDiv.innerHTML = "Loading...";
+    messageDiv.textContent = "";
+
+    const date = dateInput.value; // "YYYY-MM-DD"
+    const res = await fetch(`/available-slots?date=${date}`);
+    const data = await res.json();
+
+    if (!data.slots || data.slots.length === 0) {
+      slotsDiv.innerHTML = "No slots available that day.";
+      return;
+    }
+
+    slotsDiv.innerHTML = "";
+    data.slots.forEach((isoTime) => {
+      const btn = document.createElement("button");
+      btn.className = "slot-btn";
+      btn.type = "button";
+      const time = new Date(isoTime);
+      btn.textContent = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+      btn.addEventListener("click", () => {
+        selectedSlot = isoTime;
+        document.querySelectorAll(".slot-btn").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      });
+
+      slotsDiv.appendChild(btn);
+    });
+  });
+
+  submitBtn.addEventListener("click", async () => {
+    messageDiv.textContent = "";
+    messageDiv.className = "";
+
+    const name = document.getElementById("name").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+
+    if (!selectedSlot) {
+      messageDiv.textContent = "Please pick a time slot first.";
+      messageDiv.className = "error";
+      return;
+    }
+    if (!name || !phone) {
+      messageDiv.textContent = "Please enter your name and phone number.";
+      messageDiv.className = "error";
+      return;
+    }
+
+    const res = await fetch("/appointments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        serviceId: "c424e365-be59-49f9-8b4c-e45495a894ff",
+        clientName: name,
+        clientPhone: phone,
+        startAt: selectedSlot,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      messageDiv.textContent = `Booked! See you at ${new Date(data.startAt).toLocaleString()}.`;
+      messageDiv.className = "success";
+    } else {
+      messageDiv.textContent = data.error || "Something went wrong.";
+      messageDiv.className = "error";
+    }
+  });
+</script>
+
+</body>
+</html>

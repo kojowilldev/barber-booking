@@ -1,0 +1,78 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELED
+}
+
+model Service {
+  id              String        @id @default(uuid())
+  name            String
+  durationMinutes Int
+  price           Decimal       @db.Decimal(10, 2)
+  appointments    Appointment[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Client {
+  id           String        @id @default(uuid())
+  name         String
+  phone        String        @unique
+  email        String?
+  appointments Appointment[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Staff {
+  id           String        @id @default(uuid())
+  name         String
+  email        String?       @unique
+  appointments Appointment[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Appointment {
+  id        String            @id @default(uuid())
+
+  startAt   DateTime
+  endAt     DateTime
+
+  status    AppointmentStatus @default(PENDING)
+
+  serviceId String
+  service   Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  clientId  String
+  client    Client            @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  // Optional: an appointment can be unassigned at first, then
+  // assigned to a specific staff member once confirmed.
+  staffId   String?
+  staff     Staff?            @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  // Conflict checks are now scoped per staff member (if assigned)
+  // as well as per service, since two staff can run the same
+  // service at the same time, but one staff member can't be in
+  // two places at once.
+  @@index([serviceId, startAt])
+  @@index([staffId, startAt])
+  @@index([startAt])
+}

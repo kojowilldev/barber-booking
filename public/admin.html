@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Today's Bookings</title>
+<style>
+  body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; }
+  h1 { font-size: 1.4rem; }
+  .appt {
+    border: 1px solid #ccc; border-radius: 6px; padding: 12px;
+    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .appt.canceled { opacity: 0.5; text-decoration: line-through; }
+  .appt-info { line-height: 1.4; }
+  .cancel-btn {
+    padding: 6px 10px; background: #b00020; color: white;
+    border: none; border-radius: 4px; cursor: pointer;
+  }
+  .cancel-btn:disabled { background: #999; cursor: not-allowed; }
+  #empty { color: #666; }
+</style>
+</head>
+<body>
+
+<h1>Today's Bookings</h1>
+<div id="list"></div>
+<p id="empty" style="display:none;">No appointments yet.</p>
+
+<script>
+  const listDiv = document.getElementById("list");
+  const emptyMsg = document.getElementById("empty");
+
+  async function loadAppointments() {
+    listDiv.innerHTML = "Loading...";
+    const res = await fetch("/appointments");
+    const appointments = await res.json();
+
+    if (appointments.length === 0) {
+      listDiv.innerHTML = "";
+      emptyMsg.style.display = "block";
+      return;
+    }
+    emptyMsg.style.display = "none";
+
+    listDiv.innerHTML = "";
+    appointments.forEach((appt) => {
+      const div = document.createElement("div");
+      div.className = "appt" + (appt.status === "CANCELED" ? " canceled" : "");
+
+      const time = new Date(appt.startAt).toLocaleString();
+      div.innerHTML = `
+        <div class="appt-info">
+          <strong>${appt.client?.name ?? "Unknown"}</strong> (${appt.client?.phone ?? ""})<br/>
+          ${appt.service?.name ?? "Service"} at ${time}<br/>
+          Status: ${appt.status}
+        </div>
+      `;
+
+      if (appt.status !== "CANCELED") {
+        const btn = document.createElement("button");
+        btn.className = "cancel-btn";
+        btn.textContent = "Cancel";
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          btn.textContent = "Canceling...";
+          await fetch(`/appointments/${appt.id}/cancel`, { method: "PATCH" });
+          loadAppointments();
+        });
+        div.appendChild(btn);
+      }
+
+      listDiv.appendChild(div);
+    });
+  }
+
+  loadAppointments();
+</script>
+
+</body>
+</html>
