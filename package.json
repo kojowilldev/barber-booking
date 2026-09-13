@@ -1,0 +1,30 @@
+{
+  "name": "barber-booking",
+  "version": "1.0.0",
+  "description": "\"# barber-booking\"",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kojowilldev/barber-booking.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kojowilldev/barber-booking/issues"
+  },
+  "homepage": "https://github.com/kojowilldev/barber-booking#readme",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.20.2",
+    "express": "^5.2.1",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  }
+}
